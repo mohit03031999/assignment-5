@@ -1,43 +1,47 @@
-enum category{
-    Shirts
-    Jeans
-    Jackets
-    Sweaters
-    Accessories
-}
-type Product{
-    _id: ID!
-    id: Int!
-    category: category!
-	name: String
-	price: Float
-	image: String
-
+"Fixed set of Product Categories"
+enum Category {
+  Shirts
+  Jeans
+  Jackets
+  Sweaters
+  Accessories
 }
 
-input ProductInputs {  
-    category: category!
-	name: String
-	price: Float
-	image: String
+"Product Type"
+type Product {
+  id: Int!
+  name: String!
+  category: Category!
+  price: Float
+  imageUrl: String
 }
 
-type Query{
-    
-    productList:[Product!]!
-    Product(id:Int!):Product!
+"Toned down Prodcut, used as inputs, without server generated values."
+input ProductInputs {
+  name: String!
+  category: Category!
+  price: Float
+  imageUrl: String
 }
 
-type Mutation{
-    
-    addProduct(product: ProductInputs!): Product!
-    productDelete(id: Int!): Boolean!
-    productUpdate(id: Int!, changes: ProductUpdateInputs!): Product!
-}
-
+"""Inputs for productUpdate: all are optional. Whichever is specified will
+be set to the given value, undefined fields will remain unmodified."""
 input ProductUpdateInputs {
-  name:String
-  price:Float
-  image:String
-  category:category!
+  name: String
+  category: Category
+  price: Float
+  imageUrl: String
+}
+
+##### Top level declarations
+
+type Query {
+  productList: [Product!]!
+  product(id: Int!): Product!
+}
+
+type Mutation {
+  addProduct(product: ProductInputs!): Product!
+  productUpdate(id: Int!, changes: ProductUpdateInputs!): Product!
+  productDelete(id: Int!): Boolean!
 }

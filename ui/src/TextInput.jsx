@@ -1,14 +1,13 @@
-
-/* eslint linebreak-style: ["error", "windows"] */
-
 import React from 'react';
 
 function format(text) {
   return text != null ? text : '';
 }
+
 function unformat(text) {
   return text.trim().length === 0 ? null : text;
 }
+
 export default class TextInput extends React.Component {
   constructor(props) {
     super(props);

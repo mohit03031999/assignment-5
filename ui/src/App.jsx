@@ -1,17 +1,19 @@
-
-/* eslint linebreak-style: ["error", "windows"] */
-
-
-import { BrowserRouter as Router } from 'react-router-dom';
+import 'babel-polyfill';
+import 'whatwg-fetch';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import 'whatwg-fetch';
-import Routing from './Routing.jsx';
+import { BrowserRouter as Router } from 'react-router-dom';
 
-const element = (<Router>
-    <Routing />
+import Page from './Page.jsx';
+
+const element = (
+  <Router>
+    <Page />
   </Router>
 );
 
-
 ReactDOM.render(element, document.getElementById('contents'));
+
+if (module.hot) {
+  module.hot.accept();
+}

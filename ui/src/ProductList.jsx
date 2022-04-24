@@ -1,19 +1,19 @@
-/* eslint-disable react/destructuring-assignment */
-/* eslint-disable no-restricted-globals */
-
-/* eslint linebreak-style: ["error", "windows"] */
-
-
 import React from 'react';
-import ProductView from './ProductView.jsx';
+import ProductTable from './ProductTable.jsx';
 import ProductAdd from './ProductAdd.jsx';
+import graphQLFetch from './graphQLFetch.js';
 
+const productTableHeadings = ['Product Name', 'Price', 'Category', 'Image'];
+
+/**
+ * Entry Point of our Application. Renders the whole page from here.
+ */
 export default class ProductList extends React.Component {
   constructor() {
     super();
-    this.state = { products: [] };
+    this.state = { products: [], initialLoading: true };
+    this.addProduct = this.addProduct.bind(this);
     this.deleteProduct = this.deleteProduct.bind(this);
-    this.createProduct = this.createProduct.bind(this);
   }
 
   componentDidMount() {
@@ -21,32 +21,38 @@ export default class ProductList extends React.Component {
   }
 
   async loadData() {
-    const query = `query {
-      productList{
-        id name price category image
-      }
-    }`;
-    const response = await fetch(window.ENV.UI_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
-    const result = await response.json();
-    this.setState({ products: result.data.productList });
+    const query = `
+            query {
+                productList {
+                    id
+                    name
+                    category
+                    price
+                    imageUrl
+                }
+            }
+        `;
+
+    const data = await graphQLFetch(query);
+
+    if (data) {
+      this.setState({ products: data.productList, initialLoading: false });
+    }
   }
 
-  async createProduct(newProduct) {
-    const query = `mutation addProduct($newProduct: ProductInputs!) {
-        addProduct(product: $newProduct) {
-          id
-        }
-      }`;
-    const response = await fetch(window.ENV.UI_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { newProduct } }),
-    });
-    if (response) { this.loadData(); }
+  async addProduct(product) {
+    const query = `
+            mutation addProduct($product: ProductInputs!) {
+                addProduct(product: $product) {
+                    id
+                }
+            }
+        `;
+
+    const data = await graphQLFetch(query, { product });
+    if (data) {
+      this.loadData();
+    }
   }
 
   async deleteProduct(index) {
@@ -54,40 +60,42 @@ export default class ProductList extends React.Component {
       productDelete(id: $id)
     }`;
     const { products } = this.state;
+    const { location: { pathname, search }, history } = this.props;
     const { id } = products[index];
-    const response = await fetch(window.ENV.UI_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id } }),
-    });
-    // const result = await response.json();
-    if (response && response.productDelete) {
+
+    const data = await graphQLFetch(query, { id });
+    if (data && data.productDelete) {
       this.setState((prevState) => {
         const newList = [...prevState.products];
-        // eslint-disable-next-line no-undef
         if (pathname === `/products/${id}`) {
-          history.push({ pathname: '/products' });
+          history.push({ pathname: '/products', search });
         }
         newList.splice(index, 1);
-        return { issues: newList };
+        return { products: newList };
       });
     } else {
       this.loadData();
     }
   }
 
-
   render() {
+    const { products, initialLoading } = this.state;
     return (
       <React.Fragment>
-        <h1>My Company Inventory</h1>
-        <h2> Showing all the available products </h2>
-        <hr />
-        <ProductView products={this.state.products} deleteProduct={this.deleteProduct} />
-
-        <h2>Add a new product to inventory</h2>
-        <hr />
-        <ProductAdd createProduct={this.createProduct} />
+        <div className="container">
+          <h2>My Company Inventory</h2>
+          <div>Showing all available products</div>
+          <hr />
+          <ProductTable
+            headings={productTableHeadings}
+            products={products}
+            loading={initialLoading}
+            deleteProduct={this.deleteProduct}
+          />
+          <div>Add a new Product</div>
+          <hr />
+          <ProductAdd addProduct={this.addProduct} />
+        </div>
       </React.Fragment>
     );
   }

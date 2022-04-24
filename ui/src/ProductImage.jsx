@@ -1,43 +1,58 @@
-
-/* eslint linebreak-style: ["error", "windows"] */
-
 import React from 'react';
+
+import graphQLFetch from './graphQLFetch.js';
 
 export default class ProductImage extends React.Component {
   constructor() {
     super();
-    this.state = { products: [] };
+    this.state = { product: {} };
   }
 
   componentDidMount() {
     this.loadData();
   }
 
+  componentDidUpdate(prevProps) {
+    const { match: { params: { id: prevId } } } = prevProps;
+    const { match: { params: { id } } } = this.props;
+    if (prevId !== id) {
+      this.loadData();
+    }
+  }
+
   async loadData() {
     const { match: { params: { id } } } = this.props;
-    const query = `query Product($id: Int!) {
-      Product(id: $id) {
-        id category name price image
+    const query = `query product($id: Int!) {
+      product (id: $id) {
+        id name imageUrl
       }
     }`;
 
-    const response = await fetch(window.ENV.UI_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id } }),
-    });
-
-    const result = await response.json();
-    this.setState({ products: result.data.Product });
+    const data = await graphQLFetch(query, { id: parseInt(id, 10) });
+    if (data) {
+      this.setState({ product: data.product });
+    } else {
+      this.setState({ product: {} });
+    }
   }
 
   render() {
-    const { products: { image, name } } = this.state;
+    const { product: { id, name, imageUrl } } = this.state;
+
+    if (!id) {
+      return (<p>{`Product with Id ${id} not present in the Database`}</p>);
+    }
+
+    if (!imageUrl) {
+      return (
+        <p>{`No Image Url set for Product with id ${id}`}</p>
+      );
+    }
+
     return (
       <div>
-        <h2>Image of the Product</h2>
-        <h1>{name}</h1>
-        <img src={image} alt={name} style={{ width: 400, height: 400 }} />
+        <h3>{`Viewing Image of Product with name - ${name}`}</h3>
+        <img src={imageUrl} alt={`Product id ${id}`} />
       </div>
     );
   }

@@ -1,21 +1,16 @@
-/* eslint-disable max-len */
-
-/* eslint linebreak-style: ["error", "windows"] */
-
-
 import React from 'react';
-import NumInput from './NumberInput.jsx';
-import TextInput from './TextInput.jsx';
 
+import graphQLFetch from './graphQLFetch.js';
+import NumInput from './NumInput.jsx';
+import TextInput from './TextInput.jsx';
 
 export default class ProductEdit extends React.Component {
   constructor() {
     super();
     this.state = {
-      Editproducts: {},
-      invalidFields: {},
+      product: {},
+      isLoading: true,
     };
-
     this.onChange = this.onChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
@@ -24,19 +19,26 @@ export default class ProductEdit extends React.Component {
     this.loadData();
   }
 
+  componentDidUpdate(prevProps) {
+    const { match: { params: { id: prevId } } } = prevProps;
+    const { match: { params: { id } } } = this.props;
+    if (id !== prevId) {
+      this.loadData();
+    }
+  }
+
   onChange(event, naturalValue) {
     const { name, value: textValue } = event.target;
     const value = naturalValue === undefined ? textValue : naturalValue;
+
     this.setState(prevState => ({
-      Editproducts: { ...prevState.Editproducts, [name]: value },
+      product: { ...prevState.product, [name]: value },
     }));
   }
 
   async handleSubmit(e) {
     e.preventDefault();
-    const { Editproducts, invalidFields } = this.state;
-    if (Object.keys(invalidFields).length !== 0) return;
-    // console.log(Editproducts); // eslint-disable-line no-console
+    const { product } = this.state;
 
     const query = `mutation productUpdate(
       $id: Int!
@@ -46,70 +48,67 @@ export default class ProductEdit extends React.Component {
         id: $id
         changes: $changes
       ) {
-        id category name price image
+        id name category price imageUrl
       }
     }`;
-    const { id, ...changes } = Editproducts;
 
-    const response = await fetch(window.ENV.UI_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id, changes } }),
-    });
-    const result = await response.json();
-    if (result) {
-      window.console.log(result.data);
-      this.setState({ Editproducts: result.data.productUpdate });
-      alert('Updated Product successfully'); // eslint-disable-line no-alert
+    const { id, ...changes } = product;
+    const data = await graphQLFetch(query, { id, changes });
+    if (data) {
+      this.setState({ product: data.productUpdate });
+      alert('Updated product successfully'); // eslint-disable-line no-alert
     }
   }
 
   async loadData() {
-    const query = `query Product($id: Int!) {
-        Product(id: $id) {
-          id category name price image
-        }
-      }`;
+    const query = `query product($id: Int!) {
+      product(id: $id) {
+        id name category price imageUrl
+      }
+    }`;
+
     const { match: { params: { id } } } = this.props;
-    const response = await fetch(window.ENV.UI_API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id } }),
-    });
-
-    const result = await response.json();
-    this.setState({ Editproducts: result.data.Product });
-
-    this.setState({ Editproducts: result.data.Product ? result.data.Product : {}, invalidFields: {} });
+    const data = await graphQLFetch(query, { id: parseInt(id, 10) });
+    if (data) {
+      const { product } = data;
+      product.name = product.name != null ? product.name : '';
+      product.category = product.category != null ? product.category : '';
+      product.price = product.price != null ? product.price : '';
+      product.imageUrl = product.imageUrl != null ? product.imageUrl : '';
+      this.setState({ product, isLoading: false });
+    } else {
+      this.setState({ product: {}, isLoading: false });
+    }
   }
 
   render() {
-    const { Editproducts: { id } } = this.state;
+    const { product: { id }, isLoading } = this.state;
     const { match: { params: { id: propsId } } } = this.props;
     if (id == null) {
-      if (propsId != null) 
-      {
-        return <h3>{`products with ID ${propsId} not found.`}</h3>;
+      if (isLoading) {
+        return <h3>Loading Product details...</h3>;
       }
+
+      if (propsId != null) {
+        return <h3>{`Product with ID ${propsId} not found.`}</h3>;
+      }
+
       return null;
     }
-    const
-    {
-      Editproducts: {
-        name, category, price, image,
+
+    const {
+      product: {
+        name, category, price, imageUrl,
       },
     } = this.state;
 
-
     return (
       <form onSubmit={this.handleSubmit}>
-        <div className="gridview">
-        <h2>{`Edit Product attributes:${id}`}</h2>
-        <br />
+        <h3>{`Editing product: ${id}`}</h3>
         <table>
           <tbody>
             <tr>
-              <td>Product Name</td>
+              <td>Name</td>
               <td>
                 <TextInput
                   name="name"
@@ -120,46 +119,46 @@ export default class ProductEdit extends React.Component {
               </td>
             </tr>
             <tr>
-              <td>Category:</td>
+              <td>Category</td>
               <td>
                 <select name="category" value={category} onChange={this.onChange}>
                   <option value="Shirts">Shirts</option>
                   <option value="Jeans">Jeans</option>
-                  <option value="Sweaters">Sweaters</option>
                   <option value="Jackets">Jackets</option>
+                  <option value="Sweaters">Sweaters</option>
                   <option value="Accessories">Accessories</option>
                 </select>
               </td>
             </tr>
             <tr>
-              <td>Price:</td>
+              <td>Price</td>
               <td>
                 <NumInput
                   name="price"
                   value={price}
                   onChange={this.onChange}
                   key={id}
+                  isDecimal
                 />
               </td>
             </tr>
             <tr>
-              <td>Image</td>
+              <td>Image Url</td>
               <td>
                 <TextInput
-                  name="image"
-                  value={image}
+                  name="imageUrl"
+                  value={imageUrl}
                   onChange={this.onChange}
                   key={id}
                 />
               </td>
             </tr>
-
             <tr>
+              <td />
               <td><button type="submit">Submit</button></td>
             </tr>
           </tbody>
         </table>
-        </div>
       </form>
     );
   }
