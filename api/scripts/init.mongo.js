@@ -7,14 +7,14 @@ db.deleted_products.remove({});
 const initialProducts = [
   {
     id: 1,
-    name: "Under Armour",
+    name: "Pepe Jeans",
     category: 'Jeans',
     price: '120',
     imageUrl: 'https://picsum.photos/500/500',
   },
   {
     id: 2,
-    name: 'PUMA',
+    name: 'Nike',
     category: 'Shirts',
     price: '145',
     imageUrl: 'https://picsum.photos/500/500',

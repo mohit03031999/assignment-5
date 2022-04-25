@@ -24,7 +24,7 @@ Go to UI folder and run `npm run watch` to make babel watch for changes in files
 
 ## MongoDB reset
 
-From Api folder, you can run `mongosh "mongodb+srv://cluster0.swthe.mongodb.net/myFirstDatabase" --apiVersion 1 --username mohit scripts/init.mongo.js` and enter password as `fr22` to reset the database with two products added initially.
+From Api folder, you can run `mongosh "mongodb+srv://cluster0.swthe.mongodb.net/myFirstDatabase" --apiVersion 1 --username fr22 scripts/init.mongo.js` and enter password as `fr22` to reset the database with two products added initially.
 
 ## Lint check
 
